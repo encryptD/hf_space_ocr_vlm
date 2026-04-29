@@ -46,6 +46,9 @@ async def lifespan(app: FastAPI):
         "--model", VLM_MODEL_NAME,
         "--port", str(VLLM_PORT),
         "--host", "127.0.0.1",
+        "--trust-remote-code",
+        "--served-model-name", VLM_MODEL_NAME,
+        "--hf-overrides", '{"adapter_path": "' + VLM_MODEL_NAME + '"}',
     ]
     print(f"Starting vLLM: {' '.join(cmd)}", flush=True)
     vllm_process = subprocess.Popen(
@@ -54,9 +57,9 @@ async def lifespan(app: FastAPI):
         stderr=sys.stderr,
     )
 
-    # Wait for vLLM to be ready
-    httpx_client = httpx.AsyncClient(base_url=f"http://127.0.0.1:{VLLM_PORT}", timeout=120.0)
-    for _ in range(60):
+    # Wait for vLLM to be ready (allow up to 10 min for model download + compilation)
+    httpx_client = httpx.AsyncClient(base_url=f"http://127.0.0.1:{VLLM_PORT}", timeout=300.0)
+    for _ in range(600):
         try:
             r = await httpx_client.get("/health")
             if r.status_code == 200:
