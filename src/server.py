@@ -41,6 +41,9 @@ async def validate_hf_token(request: Request):
 async def lifespan(app: FastAPI):
     global model, processor
 
+    if HF_API_TOKEN:
+        os.environ.setdefault("HF_TOKEN", HF_API_TOKEN)
+
     print(f"Loading model {VLM_MODEL_NAME}...", flush=True)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}", flush=True)
