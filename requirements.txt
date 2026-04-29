@@ -1,7 +1,4 @@
-transformers
-peft
-torch
-pillow
+vllm
 fastapi
 uvicorn[standard]
 httpx

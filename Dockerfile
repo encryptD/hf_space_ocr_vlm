@@ -17,7 +17,13 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 COPY requirements.txt ./
 COPY src/ ./src/
 
-RUN pip3 install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cu124
+# Download IBM custom vLLM model implementation files
+RUN pip3 install --no-cache-dir huggingface-hub
+RUN huggingface-cli download ibm-granite/granite-4.0-3b-vision granite4_vision.py \
+    --local-dir /app --local-dir-use-symlinks False
+RUN huggingface-cli download ibm-granite/granite-4.0-3b-vision start_granite4_vision_server.py \
+    --local-dir /app --local-dir-use-symlinks False
+
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 EXPOSE 8000
