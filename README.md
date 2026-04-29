@@ -1,20 +1,21 @@
 ---
-title: Ocr Vlm Aggr
+title: OCR VLM Aggregator
 emoji: 🚀
 colorFrom: red
 colorTo: red
 sdk: docker
-app_port: 8501
+app_port: 8000
 tags:
-- streamlit
+- vllm
+- api
+- ocr
 pinned: false
-short_description: Enhanced OCR
+short_description: VLM OCR API powered by vLLM
 license: mit
 ---
 
-# Welcome to Streamlit!
+# OCR VLM Aggregator API
 
-Edit `/src/streamlit_app.py` to customize this app to your heart's desire. :heart:
+This Space exposes an OpenAI-compatible VLM inference API via vLLM. Access is protected by Hugging Face token authentication.
 
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+Set `VLM_MODEL_NAME` and `HF_API_TOKEN` as environment variables in the Space settings.
