@@ -17,6 +17,7 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 COPY requirements.txt ./
 COPY src/ ./src/
 
+RUN pip3 install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cu124
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 EXPOSE 8000
