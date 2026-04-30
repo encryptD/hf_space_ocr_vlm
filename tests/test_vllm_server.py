@@ -71,11 +71,10 @@ class TestServerCommandConstruction(unittest.TestCase):
         },
         clear=True,
     )
+    @patch.dict(sys.modules, {"httpx": MagicMock(), "fastapi": MagicMock(), "fastapi.responses": MagicMock()})
     def test_server_cmd_construction(self):
         import src.server as server_mod
 
-        # Re-read env vars inside the module by re-importing or exec
-        # (the module caches them at import time, so we patch before import)
         expected_cmd = [
             sys.executable,
             "-m",
