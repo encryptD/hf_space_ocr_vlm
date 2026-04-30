@@ -37,3 +37,24 @@ Current project is a Streamlit demo app. Need to convert it into an API-only ser
 * HF token set via `HF_API_TOKEN` env var (Hugging Face Spaces injects this as a secret)
 * Uses vLLM's built-in OpenAI-compatible server pattern via `vllm.entrypoints.openai.api_server` approach, but wrapped in a custom FastAPI for auth middleware
 * Port 8000 (standard for FastAPI/uvicorn)
+### 6. Serving Modes with vLLM
+*Full merge (adapter merged at load time)
+*All LoRA deltas are merged into the base weights at load time. This gives the fastest inference, as every request uses the merged model.
+##Example
+'''
+python start_granite4_vision_server.py \
+    --model ibm-granite/granite-4.0-3b-vision \
+    --trust_remote_code --host 0.0.0.0 --port 8000 \
+    --hf-overrides '{"adapter_path": "ibm-granite/granite-4.0-3b-vision"}'
+'''
+
+*Native LoRA runtime
+*vLLM applies the LM LoRA dynamically per request. Text-only prompts use the pure base model, while image prompts apply the LoRA adapter at inference time.
+##Example
+'''
+python start_granite4_vision_server.py \
+    --model ibm-granite/granite-4.0-3b-vision \
+    --trust_remote_code --host 0.0.0.0 --port 8000 \
+    --enable-lora --max-lora-rank 256 \
+    --default-mm-loras '{"image": "ibm-granite/granite-4.0-3b-vision"}'
+'''
