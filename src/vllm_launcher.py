@@ -42,9 +42,12 @@ def register_model() -> None:
     except Exception as e:
         logging.warning("Model registration skipped: %s", e)
 
+# Register on import so multiprocessing-spawned engine processes inherit
+# the custom architecture mapping without re-running the API server entrypoint.
+register_model()
+
 
 def main() -> None:
-    register_model()
     # Delegate to the standard vLLM API server.
     runpy.run_module("vllm.entrypoints.openai.api_server", run_name="__main__")
 
