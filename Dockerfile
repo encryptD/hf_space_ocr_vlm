@@ -1,7 +1,5 @@
 FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
 
-WORKDIR /app
-
 RUN apt-get update && apt-get install -y \
     python3.11 \
     python3.11-venv \
@@ -14,12 +12,22 @@ RUN apt-get update && apt-get install -y \
 
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 
-COPY requirements.txt ./
-COPY src/ ./src/
-COPY granite4_vision.py ./
-COPY start_granite4_vision_server.py ./
+# HF Spaces runs containers as uid 1000 — create the user and home dir.
+RUN useradd -m -u 1000 user
 
-RUN pip3 install --no-cache-dir -r requirements.txt
+WORKDIR /app
+
+COPY --chown=user requirements.txt ./
+RUN python3 -m pip install --no-cache-dir --break-system-packages -r requirements.txt
+
+COPY --chown=user src/ ./src/
+COPY --chown=user granite4_vision.py ./
+COPY --chown=user start_granite4_vision_server.py ./
+
+# Switch to non-root user for runtime (required by HF Spaces).
+USER user
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH
 
 EXPOSE 8000
 
