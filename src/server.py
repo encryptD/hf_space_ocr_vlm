@@ -4,6 +4,7 @@ import signal
 import subprocess
 import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
@@ -11,6 +12,7 @@ from fastapi.responses import StreamingResponse
 
 HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "")
 VLM_MODEL_NAME = os.environ.get("VLM_MODEL_NAME", "ibm-granite/granite-4.0-3b-vision")
+VLM_ADAPTER_PATH = os.environ.get("VLM_ADAPTER_PATH", "")
 VLLM_PORT = 8001
 
 vllm_process = None
@@ -44,6 +46,10 @@ async def lifespan(app: FastAPI):
         env.setdefault("HF_TOKEN", HF_API_TOKEN)
         env.setdefault("HUGGINGFACE_TOKEN", HF_API_TOKEN)
 
+    # Ensure repo root is on PYTHONPATH so granite4_vision.py is importable
+    repo_root = str(Path(__file__).resolve().parent.parent)
+    env["PYTHONPATH"] = repo_root + os.pathsep + env.get("PYTHONPATH", "")
+
     cmd = [
         sys.executable,
         "-m",
@@ -53,8 +59,9 @@ async def lifespan(app: FastAPI):
         "--host", "127.0.0.1",
         "--trust-remote-code",
         "--served-model-name", VLM_MODEL_NAME,
-        "--hf-overrides", '{"adapter_path": "' + VLM_MODEL_NAME + '"}',
     ]
+    if VLM_ADAPTER_PATH:
+        cmd.extend(["--hf-overrides", f'{{"adapter_path": "{VLM_ADAPTER_PATH}"}}'])
     print(f"Starting vLLM: {' '.join(cmd)}", flush=True)
     vllm_process = subprocess.Popen(
         cmd,

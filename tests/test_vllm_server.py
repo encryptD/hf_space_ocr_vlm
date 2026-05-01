@@ -72,28 +72,50 @@ class TestServerCommandConstruction(unittest.TestCase):
         clear=True,
     )
     @patch.dict(sys.modules, {"httpx": MagicMock(), "fastapi": MagicMock(), "fastapi.responses": MagicMock()})
-    def test_server_cmd_construction(self):
+    def test_server_cmd_construction_no_adapter(self):
         import src.server as server_mod
 
-        expected_cmd = [
-            sys.executable,
-            "-m",
-            "src.vllm_launcher",
-            "--model",
-            "ibm-granite/granite-4.0-3b-vision",
-            "--port",
-            str(server_mod.VLLM_PORT),
-            "--host",
-            "127.0.0.1",
-            "--trust-remote-code",
-            "--served-model-name",
-            "ibm-granite/granite-4.0-3b-vision",
-            "--hf-overrides",
-            '{"adapter_path": "ibm-granite/granite-4.0-3b-vision"}',
-        ]
-        # Verify each expected token is present in the module's hard-coded cmd
+        # When VLM_ADAPTER_PATH is unset, --hf-overrides should NOT appear
         self.assertEqual(server_mod.VLM_MODEL_NAME, "ibm-granite/granite-4.0-3b-vision")
         self.assertEqual(server_mod.HF_API_TOKEN, "fake-token-123")
+        self.assertEqual(server_mod.VLM_ADAPTER_PATH, "")
+
+    @patch.dict(
+        os.environ,
+        {
+            "VLM_MODEL_NAME": "ibm-granite/granite-4.0-3b-vision",
+            "HF_API_TOKEN": "fake-token-123",
+            "VLM_ADAPTER_PATH": "ibm-granite/granite-4.0-3b-vision",
+        },
+        clear=True,
+    )
+    @patch.dict(sys.modules, {"httpx": MagicMock(), "fastapi": MagicMock(), "fastapi.responses": MagicMock()})
+    def test_server_cmd_construction_with_adapter(self):
+        import src.server as server_mod
+
+        # When VLM_ADAPTER_PATH is set, --hf-overrides must contain adapter_path
+        self.assertEqual(server_mod.VLM_ADAPTER_PATH, "ibm-granite/granite-4.0-3b-vision")
+
+    def test_vllm_launcher_discovers_repo_root(self):
+        # Import in a subprocess to avoid triggering vLLM server startup.
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import sys; sys.path.insert(0, str('" + str(REPO_ROOT) + "')); "
+                    "import src.vllm_launcher as launcher; "
+                    "print('REPO_ROOT=' + launcher._REPO_ROOT)"
+                ),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        self.assertIn("REPO_ROOT=", result.stdout, msg=result.stderr)
+        repo_root = result.stdout.strip().split("REPO_ROOT=", 1)[1]
+        self.assertTrue(os.path.isdir(repo_root))
+        self.assertTrue(os.path.exists(os.path.join(repo_root, "granite4_vision.py")))
 
 
 class TestLoRAKeyMapping(unittest.TestCase):

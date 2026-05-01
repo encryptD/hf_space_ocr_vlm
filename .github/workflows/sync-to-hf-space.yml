@@ -1,0 +1,58 @@
+name: Sync to Hugging Face Space
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: hf-space-sync
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  push-to-hf-space:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git lfs install
+
+      - name: Push main branch to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE_REPO: ${{ vars.HF_SPACE_REPO }}
+          HF_SPACE_REPO_DEFAULT: encryptd/ocr_vlm_aggr
+        run: |
+          if [ -z "${HF_TOKEN}" ]; then
+            echo "Missing required GitHub secret: HF_TOKEN"
+            exit 1
+          fi
+
+          SPACE_REPO="${HF_SPACE_REPO:-${HF_SPACE_REPO_DEFAULT}}"
+          if [ -z "${SPACE_REPO}" ]; then
+            echo "Missing Hugging Face Space repo id. Set repository variable HF_SPACE_REPO."
+            exit 1
+          fi
+
+          cat > ~/.netrc <<EOF
+          machine huggingface.co
+            login oauth2
+            password ${HF_TOKEN}
+          EOF
+          chmod 600 ~/.netrc
+
+          git remote remove hf-space 2>/dev/null || true
+          git remote add hf-space "https://huggingface.co/spaces/${SPACE_REPO}"
+          git push --force hf-space HEAD:main

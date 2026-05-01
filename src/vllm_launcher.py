@@ -1,8 +1,11 @@
 import logging
+import os
 import sys
 
-# Add /app so granite4_vision.py is importable
-sys.path.insert(0, "/app")
+# Dynamically add repo root (parent of this file) so granite4_vision.py is importable
+_LAUNCHER_DIR = os.path.dirname(os.path.abspath(__file__))
+_REPO_ROOT = os.path.dirname(_LAUNCHER_DIR)
+sys.path.insert(0, _REPO_ROOT)
 
 from vllm import ModelRegistry
 
