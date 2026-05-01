@@ -33,7 +33,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_SPACE_REPO: ${{ vars.HF_SPACE_REPO }}
-          HF_SPACE_REPO_DEFAULT: encryptd/ocr_vlm_aggr
+          HF_SPACE_REPO_DEFAULT: encryptD/ocr_vlm_aggr
         run: |
           if [ -z "${HF_TOKEN}" ]; then
             echo "Missing required GitHub secret: HF_TOKEN"
@@ -46,6 +46,8 @@ jobs:
             exit 1
           fi
 
+          echo "Target Hugging Face Space: ${SPACE_REPO}"
+
           cat > ~/.netrc <<EOF
           machine huggingface.co
             login oauth2
@@ -55,4 +57,5 @@ jobs:
 
           git remote remove hf-space 2>/dev/null || true
           git remote add hf-space "https://huggingface.co/spaces/${SPACE_REPO}"
+          git ls-remote hf-space HEAD
           git push --force hf-space HEAD:main
