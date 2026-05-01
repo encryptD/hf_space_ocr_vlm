@@ -12,7 +12,16 @@ from fastapi.responses import StreamingResponse
 
 HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "")
 VLM_MODEL_NAME = os.environ.get("VLM_MODEL_NAME", "ibm-granite/granite-4.0-3b-vision")
-VLM_ADAPTER_PATH = os.environ.get("VLM_ADAPTER_PATH", "")
+_raw_adapter_path = os.environ.get("VLM_ADAPTER_PATH", "").strip()
+if _raw_adapter_path:
+    VLM_ADAPTER_PATH = _raw_adapter_path
+elif "granite-4.0-3b-vision" in VLM_MODEL_NAME:
+    # Granite4 Vision requires LM adapter weights for the language backbone.
+    # Default to full-merge adapter loading from the same HF repo unless
+    # explicitly overridden.
+    VLM_ADAPTER_PATH = VLM_MODEL_NAME
+else:
+    VLM_ADAPTER_PATH = ""
 VLLM_PORT = 8001
 
 vllm_process = None

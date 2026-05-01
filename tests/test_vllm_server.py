@@ -74,11 +74,14 @@ class TestServerCommandConstruction(unittest.TestCase):
     @patch.dict(sys.modules, {"httpx": MagicMock(), "fastapi": MagicMock(), "fastapi.responses": MagicMock()})
     def test_server_cmd_construction_no_adapter(self):
         import src.server as server_mod
-
-        # When VLM_ADAPTER_PATH is unset, --hf-overrides should NOT appear
+        # When VLM_ADAPTER_PATH is unset for Granite4 Vision, adapter path
+        # should default to the model id to enable full-merge weights.
         self.assertEqual(server_mod.VLM_MODEL_NAME, "ibm-granite/granite-4.0-3b-vision")
         self.assertEqual(server_mod.HF_API_TOKEN, "fake-token-123")
-        self.assertEqual(server_mod.VLM_ADAPTER_PATH, "")
+        self.assertEqual(
+            server_mod.VLM_ADAPTER_PATH,
+            "ibm-granite/granite-4.0-3b-vision",
+        )
 
     @patch.dict(
         os.environ,
@@ -97,6 +100,8 @@ class TestServerCommandConstruction(unittest.TestCase):
         self.assertEqual(server_mod.VLM_ADAPTER_PATH, "ibm-granite/granite-4.0-3b-vision")
 
     def test_vllm_launcher_discovers_repo_root(self):
+        if not _has_vllm():
+            self.skipTest("vLLM not installed")
         # Import in a subprocess to avoid triggering vLLM server startup.
         result = subprocess.run(
             [
