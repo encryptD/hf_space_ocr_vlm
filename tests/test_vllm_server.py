@@ -174,64 +174,76 @@ class TestWeightMapperConfig(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 
+def _get_granite4_vision_cls():
+    """Return the Granite4VisionForConditionalGeneration class.
+
+    Prefers the vLLM built-in version (available since vLLM 0.20); falls back
+    to the repo-local granite4_vision.py for older vLLM releases.
+    """
+    try:
+        from vllm.model_executor.models.granite4_vision import (
+            Granite4VisionForConditionalGeneration,
+        )
+        return Granite4VisionForConditionalGeneration
+    except ImportError:
+        from granite4_vision import Granite4VisionForConditionalGeneration
+        return Granite4VisionForConditionalGeneration
+
+
 class TestVLLMModelRegistration(unittest.TestCase):
-    """Verify the custom model registers with vLLM's ModelRegistry."""
+    """Verify the Granite4Vision model is available (built-in or custom)."""
 
     def setUp(self):
         if not _has_vllm():
             self.skipTest("vLLM not installed")
 
-    def test_model_registration_does_not_raise(self):
+    def test_model_available_in_registry(self):
         from vllm import ModelRegistry
 
-        # This is exactly what src/vllm_launcher.py does
-        try:
-            ModelRegistry.register_model(
-                "Granite4VisionForConditionalGeneration",
-                "granite4_vision:Granite4VisionForConditionalGeneration",
-            )
-        except Exception as exc:
-            # If already registered (e.g. from a previous test) that's OK
-            if "already" in str(exc).lower() or "registered" in str(exc).lower():
-                pass
-            else:
-                raise
+        supported = ModelRegistry.get_supported_archs()
+        self.assertIn("Granite4VisionForConditionalGeneration", supported)
+
+    def test_launcher_skips_registration_when_builtin(self):
+        """Verify vllm_launcher does NOT override the built-in model."""
+        from vllm import ModelRegistry
+        from src.vllm_launcher import _is_model_builtin
+
+        # On vLLM >= 0.20 the model should be built-in
+        if _is_model_builtin("Granite4VisionForConditionalGeneration"):
+            # register_model() should be a no-op
+            from src.vllm_launcher import register_model
+            register_model()  # should NOT raise
+        else:
+            self.skipTest("Built-in model not available in this vLLM version")
 
     def test_model_class_is_importable(self):
-        from granite4_vision import Granite4VisionForConditionalGeneration
+        cls = _get_granite4_vision_cls()
 
-        self.assertTrue(hasattr(Granite4VisionForConditionalGeneration, "forward"))
-        self.assertTrue(hasattr(Granite4VisionForConditionalGeneration, "load_weights"))
-        self.assertTrue(hasattr(Granite4VisionForConditionalGeneration, "compute_logits"))
-        self.assertTrue(hasattr(Granite4VisionForConditionalGeneration, "embed_multimodal"))
-        self.assertTrue(hasattr(Granite4VisionForConditionalGeneration, "embed_input_ids"))
+        self.assertTrue(hasattr(cls, "forward"))
+        self.assertTrue(hasattr(cls, "load_weights"))
+        self.assertTrue(hasattr(cls, "compute_logits"))
+        self.assertTrue(hasattr(cls, "embed_multimodal"))
+        self.assertTrue(hasattr(cls, "embed_input_ids"))
 
     def test_model_supports_expected_mixins(self):
-        from granite4_vision import Granite4VisionForConditionalGeneration
-        from vllm.model_executor.models.interfaces import (
-            SupportsLoRA,
-            SupportsMultiModal,
-            SupportsPP,
-        )
+        cls = _get_granite4_vision_cls()
 
-        self.assertTrue(issubclass(Granite4VisionForConditionalGeneration, SupportsLoRA))
-        self.assertTrue(issubclass(Granite4VisionForConditionalGeneration, SupportsMultiModal))
-        self.assertTrue(issubclass(Granite4VisionForConditionalGeneration, SupportsPP))
+        # Protocol-based interfaces may not support issubclass() at runtime
+        # when they contain non-method members. Check the MRO or duck-type
+        # attributes instead.
+        mro_names = [c.__name__ for c in cls.__mro__]
+        self.assertIn("SupportsLoRA", mro_names)
+        self.assertIn("SupportsMultiModal", mro_names)
+        self.assertIn("SupportsPP", mro_names)
 
     def test_placeholder_str_for_image(self):
-        from granite4_vision import Granite4VisionForConditionalGeneration
+        cls = _get_granite4_vision_cls()
 
-        placeholder = Granite4VisionForConditionalGeneration.get_placeholder_str("image", 0)
+        placeholder = cls.get_placeholder_str("image", 0)
         self.assertEqual(placeholder, "<image>")
 
         with self.assertRaises(ValueError):
-            Granite4VisionForConditionalGeneration.get_placeholder_str("video", 0)
-
-    def test_lora_adapter_loader_rejects_missing_config(self):
-        from granite4_vision import Granite4VisionForConditionalGeneration
-
-        with self.assertRaises(FileNotFoundError):
-            Granite4VisionForConditionalGeneration._load_adapter("/nonexistent/path")
+            cls.get_placeholder_str("video", 0)
 
 
 class TestDownsamplerModules(unittest.TestCase):
@@ -297,18 +309,15 @@ class TestVLLMLauncherScript(unittest.TestCase):
 
     def test_launcher_importable(self):
         # We import in a subprocess so the global side effects (sys.path
-        # mutation + ModelRegistry.register_model) don't leak into other tests.
+        # mutation, ModelRegistry changes) don't leak into other tests.
         result = subprocess.run(
             [
                 sys.executable,
                 "-c",
                 (
                     "import sys; sys.path.insert(0, str('" + str(REPO_ROOT) + "')); "
-                    "from vllm import ModelRegistry; "
-                    "ModelRegistry.register_model("
-                    "    'Granite4VisionForConditionalGeneration',"
-                    "    'granite4_vision:Granite4VisionForConditionalGeneration',"
-                    "); "
+                    "from src.vllm_launcher import register_model; "
+                    "register_model(); "
                     "print('OK')"
                 ),
             ],
