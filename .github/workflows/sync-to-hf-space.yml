@@ -45,17 +45,9 @@ jobs:
             echo "Missing Hugging Face Space repo id. Set repository variable HF_SPACE_REPO."
             exit 1
           fi
+          HF_NAMESPACE="${SPACE_REPO%%/*}"
+          HF_REMOTE_URL="https://${HF_NAMESPACE}:${HF_TOKEN}@huggingface.co/spaces/${SPACE_REPO}"
 
           echo "Target Hugging Face Space: ${SPACE_REPO}"
-
-          cat > ~/.netrc <<EOF
-          machine huggingface.co
-            login oauth2
-            password ${HF_TOKEN}
-          EOF
-          chmod 600 ~/.netrc
-
-          git remote remove hf-space 2>/dev/null || true
-          git remote add hf-space "https://huggingface.co/spaces/${SPACE_REPO}"
-          git ls-remote hf-space HEAD
-          git push --force hf-space HEAD:main
+          GIT_TERMINAL_PROMPT=0 git ls-remote "${HF_REMOTE_URL}" HEAD
+          GIT_TERMINAL_PROMPT=0 git push --force "${HF_REMOTE_URL}" HEAD:main
