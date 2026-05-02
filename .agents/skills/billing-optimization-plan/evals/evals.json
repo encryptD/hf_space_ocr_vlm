@@ -1,0 +1,81 @@
+{
+  "skill_name": "billing-optimization-plan",
+  "baseline_policy": "always_deep",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "What does `git status` do?",
+      "expected_tier": "lightweight"
+    },
+    {
+      "id": 2,
+      "prompt": "Give me the command to list open TCP ports on Linux.",
+      "expected_tier": "lightweight"
+    },
+    {
+      "id": 3,
+      "prompt": "Fix this typo in README and keep everything else unchanged.",
+      "expected_tier": "lightweight"
+    },
+    {
+      "id": 4,
+      "prompt": "Explain what this one-line regex means: `^\\w+@\\w+\\.com$`.",
+      "expected_tier": "lightweight"
+    },
+    {
+      "id": 5,
+      "prompt": "Write a short Python snippet to remove duplicate lines from a text file.",
+      "expected_tier": "lightweight"
+    },
+    {
+      "id": 6,
+      "prompt": "Compare two OCR backends and summarize tradeoffs for latency vs accuracy.",
+      "expected_tier": "balanced"
+    },
+    {
+      "id": 7,
+      "prompt": "Add request logging to this FastAPI endpoint and include a small test update.",
+      "expected_tier": "balanced"
+    },
+    {
+      "id": 8,
+      "prompt": "Create a script that renames files by date and supports a dry-run mode.",
+      "expected_tier": "balanced"
+    },
+    {
+      "id": 9,
+      "prompt": "Update the Dockerfile to add one dependency and verify the app still starts.",
+      "expected_tier": "balanced"
+    },
+    {
+      "id": 10,
+      "prompt": "Draft a short release checklist for a minor config update.",
+      "expected_tier": "balanced"
+    },
+    {
+      "id": 11,
+      "prompt": "Design a migration plan from a monolith to services with rollback strategy.",
+      "expected_tier": "deep"
+    },
+    {
+      "id": 12,
+      "prompt": "Investigate flaky integration tests across CI and determine root cause.",
+      "expected_tier": "deep"
+    },
+    {
+      "id": 13,
+      "prompt": "Refactor authentication across API and frontend with staged validation steps.",
+      "expected_tier": "deep"
+    },
+    {
+      "id": 14,
+      "prompt": "Create an implementation plan for multi-tenant billing with data backfill.",
+      "expected_tier": "deep"
+    },
+    {
+      "id": 15,
+      "prompt": "Propose architecture changes to improve reliability under partial outages.",
+      "expected_tier": "deep"
+    }
+  ]
+}

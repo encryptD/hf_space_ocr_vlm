@@ -1,0 +1,163 @@
+{
+  "generated_at": "2026-05-02T04:39:42.101537+00:00",
+  "skill_name": "billing-optimization-plan",
+  "total_cases": 15,
+  "accuracy": 1.0,
+  "baseline_accuracy": 0.3333,
+  "unsafe_downgrade_rate": 0.0,
+  "overprovision_rate": 0.0,
+  "predicted_cost_units": 60,
+  "baseline_cost_units": 120,
+  "oracle_cost_units": 60,
+  "estimated_cost_savings_vs_baseline_pct": 50.0,
+  "cost_gap_vs_oracle_units": 0,
+  "expected_distribution": {
+    "lightweight": 5,
+    "balanced": 5,
+    "deep": 5
+  },
+  "predicted_distribution": {
+    "lightweight": 5,
+    "balanced": 5,
+    "deep": 5
+  },
+  "confusion_matrix": {
+    "lightweight": {
+      "lightweight": 5,
+      "balanced": 0,
+      "deep": 0
+    },
+    "balanced": {
+      "lightweight": 0,
+      "balanced": 5,
+      "deep": 0
+    },
+    "deep": {
+      "lightweight": 0,
+      "balanced": 0,
+      "deep": 5
+    }
+  },
+  "cases": [
+    {
+      "id": 1,
+      "prompt": "What does `git status` do?",
+      "expected_tier": "lightweight",
+      "predicted_tier": "lightweight",
+      "baseline_tier": "deep",
+      "correct": true
+    },
+    {
+      "id": 2,
+      "prompt": "Give me the command to list open TCP ports on Linux.",
+      "expected_tier": "lightweight",
+      "predicted_tier": "lightweight",
+      "baseline_tier": "deep",
+      "correct": true
+    },
+    {
+      "id": 3,
+      "prompt": "Fix this typo in README and keep everything else unchanged.",
+      "expected_tier": "lightweight",
+      "predicted_tier": "lightweight",
+      "baseline_tier": "deep",
+      "correct": true
+    },
+    {
+      "id": 4,
+      "prompt": "Explain what this one-line regex means: `^\\w+@\\w+\\.com$`.",
+      "expected_tier": "lightweight",
+      "predicted_tier": "lightweight",
+      "baseline_tier": "deep",
+      "correct": true
+    },
+    {
+      "id": 5,
+      "prompt": "Write a short Python snippet to remove duplicate lines from a text file.",
+      "expected_tier": "lightweight",
+      "predicted_tier": "lightweight",
+      "baseline_tier": "deep",
+      "correct": true
+    },
+    {
+      "id": 6,
+      "prompt": "Compare two OCR backends and summarize tradeoffs for latency vs accuracy.",
+      "expected_tier": "balanced",
+      "predicted_tier": "balanced",
+      "baseline_tier": "deep",
+      "correct": true
+    },
+    {
+      "id": 7,
+      "prompt": "Add request logging to this FastAPI endpoint and include a small test update.",
+      "expected_tier": "balanced",
+      "predicted_tier": "balanced",
+      "baseline_tier": "deep",
+      "correct": true
+    },
+    {
+      "id": 8,
+      "prompt": "Create a script that renames files by date and supports a dry-run mode.",
+      "expected_tier": "balanced",
+      "predicted_tier": "balanced",
+      "baseline_tier": "deep",
+      "correct": true
+    },
+    {
+      "id": 9,
+      "prompt": "Update the Dockerfile to add one dependency and verify the app still starts.",
+      "expected_tier": "balanced",
+      "predicted_tier": "balanced",
+      "baseline_tier": "deep",
+      "correct": true
+    },
+    {
+      "id": 10,
+      "prompt": "Draft a short release checklist for a minor config update.",
+      "expected_tier": "balanced",
+      "predicted_tier": "balanced",
+      "baseline_tier": "deep",
+      "correct": true
+    },
+    {
+      "id": 11,
+      "prompt": "Design a migration plan from a monolith to services with rollback strategy.",
+      "expected_tier": "deep",
+      "predicted_tier": "deep",
+      "baseline_tier": "deep",
+      "correct": true
+    },
+    {
+      "id": 12,
+      "prompt": "Investigate flaky integration tests across CI and determine root cause.",
+      "expected_tier": "deep",
+      "predicted_tier": "deep",
+      "baseline_tier": "deep",
+      "correct": true
+    },
+    {
+      "id": 13,
+      "prompt": "Refactor authentication across API and frontend with staged validation steps.",
+      "expected_tier": "deep",
+      "predicted_tier": "deep",
+      "baseline_tier": "deep",
+      "correct": true
+    },
+    {
+      "id": 14,
+      "prompt": "Create an implementation plan for multi-tenant billing with data backfill.",
+      "expected_tier": "deep",
+      "predicted_tier": "deep",
+      "baseline_tier": "deep",
+      "correct": true
+    },
+    {
+      "id": 15,
+      "prompt": "Propose architecture changes to improve reliability under partial outages.",
+      "expected_tier": "deep",
+      "predicted_tier": "deep",
+      "baseline_tier": "deep",
+      "correct": true
+    }
+  ]
+}
