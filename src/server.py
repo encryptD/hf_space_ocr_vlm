@@ -55,10 +55,10 @@ async def lifespan(app: FastAPI):
         env.setdefault("HF_TOKEN", HF_API_TOKEN)
         env.setdefault("HUGGINGFACE_TOKEN", HF_API_TOKEN)
 
-    # Synchronous CUDA errors — surfaces the exact failing kernel instead of
-    # an opaque segfault during encoder profiling.
-    env.setdefault("CUDA_LAUNCH_BLOCKING", "1")
-    env.setdefault("TORCH_USE_CUDA_DSA", "1")
+    # vLLM V1 engine segfaults during encoder cache profiling with the custom
+    # Granite4Vision model (Blip2QFormerModel + Python 3.11.0~rc1).  V0 engine
+    # does not run the encoder profiling step and avoids the crash.
+    env.setdefault("VLLM_USE_V1", "0")
 
     # Ensure repo root is on PYTHONPATH so granite4_vision.py is importable
     repo_root = str(Path(__file__).resolve().parent.parent)
