@@ -8,7 +8,7 @@ from pathlib import Path
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "")
 VLM_MODEL_NAME = os.environ.get("VLM_MODEL_NAME", "ibm-granite/granite-4.0-3b-vision")
@@ -29,7 +29,8 @@ httpx_client = None
 
 
 async def validate_hf_token(request: Request):
-    if request.url.path == "/health":
+    # Skip auth for health check and HF Space infra probes on root path
+    if request.url.path in ("/health", "/"):
         return
     if not HF_API_TOKEN:
         raise HTTPException(status_code=500, detail="HF_API_TOKEN not configured")
@@ -119,7 +120,10 @@ async def auth_middleware(request: Request, call_next):
     try:
         await validate_hf_token(request)
     except HTTPException as exc:
-        raise exc
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+        )
     return await call_next(request)
 
 
