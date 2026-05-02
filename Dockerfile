@@ -1,16 +1,17 @@
 FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
 
+# Use stable system Python 3.10.12 — Ubuntu 22.04's python3.11 package is
+# 3.11.0~rc1 (a pre-release) which has known segfault bugs in
+# _PyEval_EvalFrameDefault that crash vLLM's encoder cache profiling.
 RUN apt-get update && apt-get install -y \
-    python3.11 \
-    python3.11-venv \
-    python3.11-dev \
+    python3 \
+    python3-venv \
+    python3-dev \
     python3-pip \
     curl \
     git \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
-
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 
 # HF Spaces runs containers as uid 1000 — create the user and home dir.
 RUN useradd -m -u 1000 user
