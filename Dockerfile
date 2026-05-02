@@ -30,8 +30,8 @@ USER user
 ENV HOME=/home/user \
     PATH=/home/user/.local/bin:$PATH
 
-EXPOSE 8000
+EXPOSE 7860
 
-HEALTHCHECK CMD curl --fail http://localhost:8000/health || exit 1
+HEALTHCHECK CMD curl --fail http://localhost:7860/health || exit 1
 
-CMD ["python3", "-m", "uvicorn", "src.server:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python3", "-m", "uvicorn", "src.server:app", "--host", "0.0.0.0", "--port", "7860"]
