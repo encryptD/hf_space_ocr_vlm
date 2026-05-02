@@ -146,8 +146,18 @@ async def proxy(request: Request, path: str):
         content=body,
     )
 
+    # Strip hop-by-hop headers that the framework must set itself;
+    # forwarding them from vLLM breaks HTTP/2 framing via the HF proxy.
+    fwd_headers = {
+        k: v for k, v in response.headers.items()
+        if k.lower() not in (
+            "content-length", "content-encoding",
+            "transfer-encoding", "connection",
+        )
+    }
+
     return StreamingResponse(
         response.aiter_raw(),
         status_code=response.status_code,
-        headers=dict(response.headers),
+        headers=fwd_headers,
     )
