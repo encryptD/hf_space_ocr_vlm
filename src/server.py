@@ -8,7 +8,7 @@ from pathlib import Path
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, Response
 
 HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "")
 VLM_MODEL_NAME = os.environ.get("VLM_MODEL_NAME", "ibm-granite/granite-4.0-3b-vision")
@@ -146,18 +146,8 @@ async def proxy(request: Request, path: str):
         content=body,
     )
 
-    # Strip hop-by-hop headers that the framework must set itself;
-    # forwarding them from vLLM breaks HTTP/2 framing via the HF proxy.
-    fwd_headers = {
-        k: v for k, v in response.headers.items()
-        if k.lower() not in (
-            "content-length", "content-encoding",
-            "transfer-encoding", "connection",
-        )
-    }
-
-    return StreamingResponse(
-        response.aiter_raw(),
+    return Response(
+        content=response.content,
         status_code=response.status_code,
-        headers=fwd_headers,
+        media_type=response.headers.get("content-type", "application/json"),
     )
