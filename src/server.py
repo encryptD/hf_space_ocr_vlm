@@ -55,6 +55,11 @@ async def lifespan(app: FastAPI):
         env.setdefault("HF_TOKEN", HF_API_TOKEN)
         env.setdefault("HUGGINGFACE_TOKEN", HF_API_TOKEN)
 
+    # Synchronous CUDA errors — surfaces the exact failing kernel instead of
+    # an opaque segfault during encoder profiling.
+    env.setdefault("CUDA_LAUNCH_BLOCKING", "1")
+    env.setdefault("TORCH_USE_CUDA_DSA", "1")
+
     # Ensure repo root is on PYTHONPATH so granite4_vision.py is importable
     repo_root = str(Path(__file__).resolve().parent.parent)
     env["PYTHONPATH"] = repo_root + os.pathsep + env.get("PYTHONPATH", "")
