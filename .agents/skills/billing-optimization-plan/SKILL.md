@@ -6,7 +6,10 @@ description: Optimize model-credit usage by selecting the lightest model tier th
 # Billing Optimization Plan
 
 ## When to use
-Use this skill for every interaction before doing planning, code edits, or tool execution.
+Apply this skill silently at the start of every interaction — before doing
+planning, code edits, or tool execution. The agent should internally classify
+the request tier and operate at the lowest sufficient level. No need to
+explicitly report the tier to the user unless asked.
 
 ## Core policy
 If a task does not require deep reasoning, planning, or multi-step problem solving, choose a lightweight model tier to reduce credit usage.

@@ -17,9 +17,14 @@ Use this skill when the user wants to debug `encryptd/ocr_vlm_aggr` by reading H
    - Prefer existing login (`hf auth whoami`) or `HF_TOKEN` in environment.
    - Never print or echo secret tokens.
 2. Collect current Space state and logs.
-   - Preferred (new CLI): run `hf spaces logs encryptd/ocr_vlm_aggr --build -n 300` for build errors and `hf spaces logs encryptd/ocr_vlm_aggr -n 300` for runtime/container errors.
-   - Fallback (older environments): use Python `huggingface_hub` `HfApi.fetch_space_logs(...)` to fetch build/runtime logs.
-   - If one method fails, try the other before stopping; if both fail, report the exact auth/tooling blocker.
+   - **Preferred – HF REST API (works everywhere with `curl` or `wget`):**
+     - Build logs: `curl -N -H "Authorization: Bearer $HF_TOKEN" "https://huggingface.co/api/spaces/encryptd/ocr_vlm_aggr/logs/build"`
+     - Runtime / container logs: `curl -N -H "Authorization: Bearer $HF_TOKEN" "https://huggingface.co/api/spaces/encryptd/ocr_vlm_aggr/logs/run"`
+     - Both endpoints stream SSE (`data: {"data":"...","timestamp":"..."}` lines). Pipe through `timeout` (e.g. `timeout 30 curl …`) for the runtime endpoint which stays open indefinitely.
+     - If `curl` is unavailable, use `wget --header="Authorization: Bearer $HF_TOKEN" -O -` with the same URLs (also use `timeout` for the runtime endpoint).
+   - **Fallback 1 – HF CLI:** `hf spaces logs encryptd/ocr_vlm_aggr --build -n 300` (build) and `hf spaces logs encryptd/ocr_vlm_aggr -n 300` (runtime).
+   - **Fallback 2 – Python:** `huggingface_hub` `HfApi.fetch_space_logs(...)` to fetch build/runtime logs.
+   - If all methods fail, report the exact auth/tooling blocker.
 3. Persist evidence locally before editing.
    - Save outputs under `logs/hf_space/` with timestamps:
      - `logs/hf_space/<timestamp>_build.log`
