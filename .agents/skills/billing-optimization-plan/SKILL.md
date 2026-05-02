@@ -16,6 +16,26 @@ If a task does not require deep reasoning, planning, or multi-step problem solvi
 - `balanced`: Moderate requests with a few steps but low ambiguity.
 - `deep`: Complex, ambiguous, or high-risk requests that need careful reasoning and planning.
 
+## Model candidates by tier
+Use the closest available model from each class when mapping tiers to concrete models:
+
+- `lightweight` (fast + low cost)
+  - Claude Haiku class (example: `claude-3-5-haiku`)
+  - GPT mini class (example: `gpt-4.1-mini`)
+  - Small instruct open models (example: `llama-3.1-8b-instruct`)
+
+- `balanced` (mid-cost + stronger general reasoning)
+  - Claude Sonnet class (example: `claude-sonnet-4-5`)
+  - GPT standard class (example: `gpt-4.1`)
+  - Mid-size instruct open models (example: `qwen2.5-32b-instruct`)
+
+- `deep` (highest reasoning quality)
+  - Claude Opus class (example: `claude-opus-4-1`)
+  - Reasoning-focused models (example: `o3`)
+  - Frontier open reasoning models (example: `deepseek-r1`)
+
+If a listed model is unavailable, pick the nearest equivalent in the same tier.
+
 ## Classification rubric
 Choose `lightweight` when most of these are true:
 - The user asks for a command, definition, tiny edit, or short transformation.
