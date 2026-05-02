@@ -18,7 +18,7 @@ RUN useradd -m -u 1000 user
 WORKDIR /app
 
 COPY --chown=user requirements.txt ./
-RUN python3 -m pip install --no-cache-dir --break-system-packages -r requirements.txt
+RUN python3 -m pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=user src/ ./src/
 COPY --chown=user granite4_vision.py ./
