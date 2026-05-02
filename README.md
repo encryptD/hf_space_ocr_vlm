@@ -4,7 +4,7 @@ emoji: 🚀
 colorFrom: red
 colorTo: red
 sdk: docker
-app_port: 8000
+app_port: 7860
 tags:
 - vllm
 - api
