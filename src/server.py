@@ -67,6 +67,7 @@ async def lifespan(app: FastAPI):
         "--port", str(VLLM_PORT),
         "--host", "127.0.0.1",
         "--trust-remote-code",
+        "--enforce-eager",
         "--served-model-name", VLM_MODEL_NAME,
     ]
     if VLM_ADAPTER_PATH:
