@@ -203,18 +203,17 @@ class TestVLLMModelRegistration(unittest.TestCase):
         supported = ModelRegistry.get_supported_archs()
         self.assertIn("Granite4VisionForConditionalGeneration", supported)
 
-    def test_launcher_skips_registration_when_builtin(self):
-        """Verify vllm_launcher does NOT override the built-in model."""
+    def test_launcher_overrides_builtin_registration(self):
+        """Verify vllm_launcher always registers the custom model."""
         from vllm import ModelRegistry
-        from src.vllm_launcher import _is_model_builtin
+        from src.vllm_launcher import register_model
 
-        # On vLLM >= 0.20 the model should be built-in
-        if _is_model_builtin("Granite4VisionForConditionalGeneration"):
-            # register_model() should be a no-op
-            from src.vllm_launcher import register_model
-            register_model()  # should NOT raise
-        else:
-            self.skipTest("Built-in model not available in this vLLM version")
+        # register_model() should succeed (override built-in if present)
+        register_model()  # should NOT raise
+        self.assertIn(
+            "Granite4VisionForConditionalGeneration",
+            ModelRegistry.get_supported_archs(),
+        )
 
     def test_model_class_is_importable(self):
         cls = _get_granite4_vision_cls()

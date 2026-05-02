@@ -12,33 +12,22 @@ if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
 
-def _is_model_builtin(arch: str) -> bool:
-    """Return True if *arch* is already registered in vLLM's model registry."""
-    try:
-        return arch in ModelRegistry.get_supported_archs()
-    except Exception:
-        return False
-
-
 def register_model() -> None:
     arch = "Granite4VisionForConditionalGeneration"
 
-    # vLLM ≥ 0.20 ships with a built-in implementation that accepts the
-    # standard (quant_config, cache_config, prefix) constructor signature.
-    # Overriding it with the repo-local granite4_vision.py would cause a
-    # TypeError because the local version lacks those parameters.
-    if _is_model_builtin(arch):
-        logging.info(
-            "%s is already built-in to vLLM – skipping custom registration", arch
-        )
-        return
-
+    # Always register the repo-local granite4_vision.py implementation.
+    # vLLM ≥ 0.20 ships a built-in version but it hard-codes GraniteForCausalLM
+    # (dense) as the language backbone. granite-4.0-3b-vision actually uses a
+    # GraniteMoeHybrid language model with shared_mlp layers, so the built-in
+    # crashes with KeyError: 'layers.0.shared_mlp.input_linear.weight'.
+    # Our custom version uses init_vllm_registered_model() which dynamically
+    # resolves the correct language model class from text_config.model_type.
     try:
         ModelRegistry.register_model(
             arch,
             "granite4_vision:Granite4VisionForConditionalGeneration",
         )
-        logging.info("Registered %s (custom)", arch)
+        logging.info("Registered %s (custom, overriding built-in)", arch)
     except Exception as e:
         logging.warning("Model registration skipped: %s", e)
 
