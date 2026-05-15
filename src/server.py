@@ -12,6 +12,10 @@ from fastapi.responses import JSONResponse, Response
 
 HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "")
 VLM_MODEL_NAME = os.environ.get("VLM_MODEL_NAME", "ibm-granite/granite-4.0-3b-vision")
+GLM_OCR_MODEL_NAME = os.environ.get("GLM_OCR_MODEL_NAME", "zai-org/GLM-OCR")
+GLM_OCR_ENABLED = os.environ.get("GLM_OCR_ENABLED", "1").strip().lower() not in {"0", "false", "no"}
+GRANITE_GPU_MEMORY_UTILIZATION = os.environ.get("GRANITE_GPU_MEMORY_UTILIZATION", "0.40")
+GLM_OCR_GPU_MEMORY_UTILIZATION = os.environ.get("GLM_OCR_GPU_MEMORY_UTILIZATION", "0.42")
 _raw_adapter_path = os.environ.get("VLM_ADAPTER_PATH", "").strip()
 if _raw_adapter_path:
     VLM_ADAPTER_PATH = _raw_adapter_path
@@ -26,6 +30,7 @@ VLLM_PORT = 8001
 GLM_OCR_PORT = 8002
 
 vllm_process = None
+glm_ocr_process = None
 httpx_client = None
 glm_ocr_client = None
 
@@ -50,7 +55,7 @@ async def validate_hf_token(request: Request):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global vllm_process, httpx_client, glm_ocr_client
+    global vllm_process, glm_ocr_process, httpx_client, glm_ocr_client
 
     # Forward auth token for model download
     env = os.environ.copy()
@@ -73,6 +78,7 @@ async def lifespan(app: FastAPI):
         "--trust-remote-code",
         "--enforce-eager",
         "--max-model-len", "8192",
+        "--gpu-memory-utilization", GRANITE_GPU_MEMORY_UTILIZATION,
         "--served-model-name", VLM_MODEL_NAME,
     ]
     if VLM_ADAPTER_PATH:
@@ -103,17 +109,58 @@ async def lifespan(app: FastAPI):
         print("vLLM did not become ready in time", flush=True)
         raise RuntimeError("vLLM startup timeout")
 
-    # Initialize GLM-OCR client (will be ready when supervisord starts it)
-    glm_ocr_client = httpx.AsyncClient(
-        base_url=f"http://127.0.0.1:{GLM_OCR_PORT}",
-        timeout=300.0,
-    )
+    if GLM_OCR_ENABLED:
+        glm_cmd = [
+            sys.executable,
+            "-m",
+            "vllm.entrypoints.openai.api_server",
+            "--model", GLM_OCR_MODEL_NAME,
+            "--port", str(GLM_OCR_PORT),
+            "--host", "127.0.0.1",
+            "--trust-remote-code",
+            "--enforce-eager",
+            "--max-model-len", "8192",
+            "--gpu-memory-utilization", GLM_OCR_GPU_MEMORY_UTILIZATION,
+            "--served-model-name", GLM_OCR_MODEL_NAME,
+        ]
+        print(f"Starting GLM-OCR vLLM: {' '.join(glm_cmd)}", flush=True)
+        glm_ocr_process = subprocess.Popen(
+            glm_cmd,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+            env=env,
+        )
+        glm_ocr_client = httpx.AsyncClient(
+            base_url=f"http://127.0.0.1:{GLM_OCR_PORT}",
+            timeout=300.0,
+        )
+        for _ in range(900):
+            try:
+                r = await glm_ocr_client.get("/health")
+                if r.status_code == 200:
+                    print("GLM-OCR vLLM is ready", flush=True)
+                    break
+            except Exception:
+                pass
+            await asyncio.sleep(1)
+        else:
+            print("GLM-OCR vLLM did not become ready in time", flush=True)
+            raise RuntimeError("GLM-OCR vLLM startup timeout")
+    else:
+        print("GLM-OCR backend is disabled (GLM_OCR_ENABLED=0)", flush=True)
 
     yield
 
-    await httpx_client.aclose()
+    if httpx_client:
+        await httpx_client.aclose()
     if glm_ocr_client:
         await glm_ocr_client.aclose()
+    if glm_ocr_process:
+        glm_ocr_process.send_signal(signal.SIGTERM)
+        try:
+            glm_ocr_process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            glm_ocr_process.kill()
     if vllm_process:
         vllm_process.send_signal(signal.SIGTERM)
         try:
@@ -145,17 +192,28 @@ async def health():
 @app.api_route("/v1/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def proxy_granite(request: Request, path: str):
     """Route /v1/* to Granite vLLM on port 8001"""
+    if httpx_client is None:
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Granite backend is not initialized"},
+        )
     body = await request.body()
     headers = dict(request.headers)
     headers.pop("host", None)
 
     url = httpx.URL(path=request.url.path, query=request.url.query.encode("utf-8"))
-    response = await httpx_client.request(
-        method=request.method,
-        url=url,
-        headers=headers,
-        content=body,
-    )
+    try:
+        response = await httpx_client.request(
+            method=request.method,
+            url=url,
+            headers=headers,
+            content=body,
+        )
+    except httpx.HTTPError as exc:
+        return JSONResponse(
+            status_code=503,
+            content={"detail": f"Granite backend unavailable: {exc.__class__.__name__}"},
+        )
 
     return Response(
         content=response.content,
@@ -167,18 +225,29 @@ async def proxy_granite(request: Request, path: str):
 @app.api_route("/glm/v1/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def proxy_glm_ocr(request: Request, path: str):
     """Route /glm/v1/* to GLM-OCR vLLM on port 8002"""
+    if not GLM_OCR_ENABLED or glm_ocr_client is None:
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "GLM-OCR backend is disabled or not initialized"},
+        )
     body = await request.body()
     headers = dict(request.headers)
     headers.pop("host", None)
 
     # Strip /glm prefix and forward to GLM-OCR vLLM
     url = httpx.URL(path=f"/v1/{path}", query=request.url.query.encode("utf-8"))
-    response = await glm_ocr_client.request(
-        method=request.method,
-        url=url,
-        headers=headers,
-        content=body,
-    )
+    try:
+        response = await glm_ocr_client.request(
+            method=request.method,
+            url=url,
+            headers=headers,
+            content=body,
+        )
+    except httpx.HTTPError as exc:
+        return JSONResponse(
+            status_code=503,
+            content={"detail": f"GLM-OCR backend unavailable: {exc.__class__.__name__}"},
+        )
 
     return Response(
         content=response.content,
