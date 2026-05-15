@@ -1,0 +1,16 @@
+{
+  auto_https off
+}
+
+:7860 {
+  # Reverse proxy for GLM-OCR on /glm/v1/*
+  route /glm/v1/* {
+    uri strip_prefix /glm
+    reverse_proxy localhost:8001
+  }
+
+  # All other paths → Granite Vision (7860)
+  # This creates a loop for regular paths that should be served locally
+  # For now, we'll let FastAPI handle everything on 7860
+  reverse_proxy localhost:7860
+}
