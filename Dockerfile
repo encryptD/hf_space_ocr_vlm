@@ -20,6 +20,10 @@ WORKDIR /app
 
 COPY --chown=user requirements.txt ./
 RUN python3 -m pip install --no-cache-dir -r requirements.txt
+# GLM-OCR requires Transformers 5.x model definitions (glm_ocr), while vLLM
+# 0.19.0 currently installs a 4.x release transitively.
+RUN python3 -m pip install --no-cache-dir --no-deps \
+    transformers==5.1.0
 
 COPY --chown=user src/ ./src/
 COPY --chown=user granite4_vision.py ./
