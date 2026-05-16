@@ -172,6 +172,13 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
+def log_routed_request(backend: str, request: Request, status_code: int) -> None:
+    print(
+        f"ROUTE_LOG backend={backend} method={request.method} path={request.url.path} status={status_code}",
+        flush=True,
+    )
+
+
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
     try:
@@ -193,8 +200,10 @@ async def health():
 async def proxy_granite(request: Request, path: str):
     """Route /v1/* to Granite vLLM on port 8001"""
     if httpx_client is None:
+        status_code = 503
+        log_routed_request("granite", request, status_code)
         return JSONResponse(
-            status_code=503,
+            status_code=status_code,
             content={"detail": "Granite backend is not initialized"},
         )
     body = await request.body()
@@ -210,10 +219,13 @@ async def proxy_granite(request: Request, path: str):
             content=body,
         )
     except httpx.HTTPError as exc:
+        status_code = 503
+        log_routed_request("granite", request, status_code)
         return JSONResponse(
-            status_code=503,
+            status_code=status_code,
             content={"detail": f"Granite backend unavailable: {exc.__class__.__name__}"},
         )
+    log_routed_request("granite", request, response.status_code)
 
     return Response(
         content=response.content,
@@ -226,8 +238,10 @@ async def proxy_granite(request: Request, path: str):
 async def proxy_glm_ocr(request: Request, path: str):
     """Route /glm/v1/* to GLM-OCR vLLM on port 8002"""
     if not GLM_OCR_ENABLED or glm_ocr_client is None:
+        status_code = 503
+        log_routed_request("glm", request, status_code)
         return JSONResponse(
-            status_code=503,
+            status_code=status_code,
             content={"detail": "GLM-OCR backend is disabled or not initialized"},
         )
     body = await request.body()
@@ -244,10 +258,13 @@ async def proxy_glm_ocr(request: Request, path: str):
             content=body,
         )
     except httpx.HTTPError as exc:
+        status_code = 503
+        log_routed_request("glm", request, status_code)
         return JSONResponse(
-            status_code=503,
+            status_code=status_code,
             content={"detail": f"GLM-OCR backend unavailable: {exc.__class__.__name__}"},
         )
+    log_routed_request("glm", request, response.status_code)
 
     return Response(
         content=response.content,
